@@ -1,0 +1,87 @@
+#### THIS FILE IS MANAGED BY AN AUTOMATED WORKFLOW ####
+#### UPDATES MUST BE DONE IN THE CI-WORKFLOWS REPO - OR YOUR CHANGES WILL BE LOST ####
+#### https://github.com/next-mesh/ci-workflows ####
+
+name: deploy lambda
+run-name: "deploy ${{ inputs.env || 'dev' }} - ${{ github.ref_name }} by @${{ github.actor }}"
+
+on:
+  push:
+    branches: [master, main]
+    paths-ignore:
+      - '**/*.md'
+      - '.editorconfig'
+      - '.gitignore'
+      - 'ruff.toml'
+      - 'CODEOWNERS'
+      - 'LICENSE'
+      - '.github/**'
+
+  workflow_dispatch:
+    inputs:
+      env:
+        description: Target environment
+        required: true
+        type: choice
+        options:
+          - dev
+          - uq-uat
+          - prod
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-dev:
+    if: github.event_name == 'push'
+    runs-on: [self-hosted, linux, x86, ecs-python]
+    steps:
+      - name: mint nextmesh-ci installation token
+        uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          client-id: ${{ vars.NEXTMESH_CI_CLIENT_ID }}
+          private-key: ${{ secrets.NEXTMESH_CI_APP_PRIVATE_KEY }}
+          owner: next-mesh
+          repositories: ci-workflows
+          permission-actions: write
+
+      - uses: next-mesh/ci-workflows/.github/actions/dispatch-and-tail-workflow@main
+        with:
+          workflow: py-lambda-deploy.yml
+          repo: next-mesh/ci-workflows
+          token: ${{ steps.app-token.outputs.token }}
+          inputs_json: |
+            {
+              "repo": "${{ github.event.repository.name }}",
+              "env": "dev",
+              "ref": "${{ github.sha }}",
+              "actor": "${{ github.actor }}"
+            }
+
+  deploy-env:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: [self-hosted, linux, x86, ecs-python]
+    steps:
+      - name: mint nextmesh-ci installation token
+        uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          client-id: ${{ vars.NEXTMESH_CI_CLIENT_ID }}
+          private-key: ${{ secrets.NEXTMESH_CI_APP_PRIVATE_KEY }}
+          owner: next-mesh
+          repositories: ci-workflows
+          permission-actions: write
+
+      - uses: next-mesh/ci-workflows/.github/actions/dispatch-and-tail-workflow@main
+        with:
+          workflow: py-lambda-deploy.yml
+          repo: next-mesh/ci-workflows
+          token: ${{ steps.app-token.outputs.token }}
+          inputs_json: |
+            {
+              "repo": "${{ github.event.repository.name }}",
+              "env": "${{ inputs.env }}",
+              "ref": "${{ github.sha }}",
+              "actor": "${{ github.actor }}"
+            }

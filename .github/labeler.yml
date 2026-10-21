@@ -1,0 +1,69 @@
+# #### THIS FILE IS MANAGED BY AN AUTOMATED WORKFLOW ####
+# #### UPDATES MUST BE DONE IN THE CI-WORKFLOWS REPO - OR YOUR CHANGES WILL BE LOST ####
+# #### https://github.com/next-mesh/ci-workflows ####
+#
+# Path-based PR labelling rules consumed by actions/labeler@v5.
+# Schema: <label>: - changed-files: - any-glob-to-any-file: <glob>
+
+area/go:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.go"
+          - "go.mod"
+          - "go.sum"
+          - ".go-version"
+
+area/python:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.py"
+          - "pyproject.toml"
+          - "requirements*.txt"
+          - "Pipfile"
+          - "Pipfile.lock"
+          - "poetry.lock"
+
+area/typescript:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.ts"
+          - "**/*.tsx"
+          - "**/*.js"
+          - "**/*.jsx"
+          - "package.json"
+          - "package-lock.json"
+          - "tsconfig*.json"
+
+area/terraform:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.tf"
+          - "**/*.tfvars"
+          - "**/*.hcl"
+
+area/ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/workflows/**"
+          - ".github/actions/**"
+          - ".github/dependabot.yml"
+          - ".github/labeler.yml"
+          - ".github/labels.yml"
+
+area/docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.md"
+          - "docs/**"
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "go.mod"
+          - "go.sum"
+          - "package.json"
+          - "package-lock.json"
+          - "requirements*.txt"
+          - "pyproject.toml"
+          - "Pipfile.lock"
+          - "poetry.lock"

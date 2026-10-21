@@ -1,0 +1,51 @@
+#### THIS FILE IS MANAGED BY AN AUTOMATED WORKFLOW ####
+#### UPDATES MUST BE DONE IN THE CI-WORKFLOWS REPO - OR YOUR CHANGES WILL BE LOST ####
+#### https://github.com/next-mesh/ci-workflows ####
+#
+# Removes old workflow runs from the Actions UI to keep the run list manageable.
+# Runs weekly + on-demand. Defaults err on the side of keeping things.
+
+name: cleanup-workflows
+
+on:
+  workflow_dispatch:
+    inputs:
+      keep_minimum_runs:
+        description: "Minimum runs to retain per workflow"
+        required: false
+        default: "20"
+        type: string
+      retain_days:
+        description: "Delete runs older than this many days"
+        required: false
+        default: "90"
+        type: string
+      delete_workflow_pattern:
+        description: "Only act on workflow files matching this glob (blank = all)"
+        required: false
+        default: ""
+        type: string
+  schedule:
+    - cron: "0 0 1 * *"  # 1st of month 00:00 UTC
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: cleanup-workflows
+  cancel-in-progress: true
+
+jobs:
+  cleanup:
+    runs-on: [self-hosted, linux, arm64, ecs]
+    timeout-minutes: 15
+    steps:
+      - name: Delete old workflow runs
+        uses: Mattraks/delete-workflow-runs@v2.1.0
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          retain_days: ${{ inputs.retain_days || 90 }}
+          keep_minimum_runs: ${{ inputs.keep_minimum_runs || 20 }}
+          delete_workflow_pattern: ${{ inputs.delete_workflow_pattern || '' }}

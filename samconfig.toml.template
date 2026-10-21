@@ -1,0 +1,13 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "innomesh-cloudcontrol-ResolveGatewayAddress-v1"
+s3_bucket = "innomesh-cloudcontrol-$BITBUCKET_DEPLOYMENT_ENVIRONMENT"
+s3_prefix = "innomesh-cloudcontrol-ResolveGatewayAddress-v1"
+region = "ap-southeast-2"
+confirm_changeset = false
+fail_on_empty_changeset = false
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "NotificationEmail=\"\""
+image_repositories = []

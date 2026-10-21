@@ -1,0 +1,40 @@
+#### THIS FILE IS MANAGED BY AN AUTOMATED WORKFLOW ####
+#### UPDATES MUST BE DONE IN THE CI-WORKFLOWS REPO - OR YOUR CHANGES WILL BE LOST ####
+#### https://github.com/next-mesh/ci-workflows ####
+
+# EditorConfig — https://EditorConfig.org
+
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+charset = utf-8
+indent_style = space
+indent_size = 2
+max_line_length = 120
+
+# Go: standard is tabs, gofmt enforces it
+[*.go]
+indent_style = tab
+indent_size = 4
+
+# Makefile: tabs are mandatory
+[Makefile]
+indent_style = tab
+indent_size = 4
+
+# Python: 4 spaces (PEP 8)
+[*.{py,pyi}]
+indent_style = space
+indent_size = 4
+
+# Terraform / HCL: 2 spaces
+[*.{tf,tfvars,hcl}]
+indent_style = space
+indent_size = 2
+
+# Markdown: trailing whitespace is meaningful (line break)
+[*.{md,markdown}]
+trim_trailing_whitespace = false

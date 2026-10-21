@@ -1,0 +1,22 @@
+#### THIS FILE IS MANAGED BY AN AUTOMATED WORKFLOW ####
+#### UPDATES MUST BE DONE IN THE CI-WORKFLOWS REPO - OR YOUR CHANGES WILL BE LOST ####
+#### https://github.com/next-mesh/ci-workflows ####
+
+name: pr checks
+
+on:
+  # No paths-ignore: the called reusable workflow's detect-changes job skips
+  # the actual work (not the trigger) for docs/.github-only PRs, so the
+  # required "checks / test|lint" contexts always get created instead of
+  # being permanently "expected" - see detect-relevant-changes' doc comment.
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  checks:
+    uses: next-mesh/ci-workflows/.github/workflows/py-lambda-pr-checks.yml@main
+    secrets: inherit

@@ -1,0 +1,45 @@
+#### THIS FILE IS MANAGED BY AN AUTOMATED WORKFLOW ####
+#### UPDATES MUST BE DONE IN THE CI-WORKFLOWS REPO - OR YOUR CHANGES WILL BE LOST ####
+#### https://github.com/next-mesh/ci-workflows ####
+#
+# Trivy security scan — calls the reusable workflow in ci-workflows.
+# Runs on every PR (against the PR's diff base) and on push to the default
+# branch. Results post to https://trivy.innomesh.au and as PR comments.
+# Suppress known CVEs by adding .trivyignore.yaml to the repo root — see
+# TRIVY.md (also synced).
+
+name: trivy-scan
+
+on:
+  pull_request:
+    branches: [master, main]
+    paths-ignore:
+      - '**/*.md'
+      - '.editorconfig'
+      - '.gitignore'
+      - '.golangci.yml'
+      - 'ruff.toml'
+      - 'CODEOWNERS'
+      - 'LICENSE'
+      - '.github/**'
+  push:
+    branches: [main, master]
+    paths-ignore:
+      - '**/*.md'
+      - '.editorconfig'
+      - '.gitignore'
+      - '.golangci.yml'
+      - 'ruff.toml'
+      - 'CODEOWNERS'
+      - 'LICENSE'
+      - '.github/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  scan:
+    uses: next-mesh/ci-workflows/.github/workflows/trivy-scan.yml@main
+    secrets: inherit

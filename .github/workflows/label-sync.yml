@@ -1,0 +1,43 @@
+#### THIS FILE IS MANAGED BY AN AUTOMATED WORKFLOW ####
+#### UPDATES MUST BE DONE IN THE CI-WORKFLOWS REPO - OR YOUR CHANGES WILL BE LOST ####
+#### https://github.com/next-mesh/ci-workflows ####
+#
+# Reconciles the repo's label inventory against .github/labels.yml (synced).
+# Renames / recolors existing labels to match; deletes labels not in the file.
+# Runs daily + on-demand. Run with delete=false to dry-run additions only.
+
+name: label-sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      delete_other_labels:
+        description: "Delete labels not present in .github/labels.yml"
+        required: false
+        default: true
+        type: boolean
+  schedule:
+    - cron: "30 4 * * 0"  # weekly Sunday 04:30 UTC
+
+permissions:
+  issues: write
+  pull-requests: write
+  contents: read
+
+concurrency:
+  group: label-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: [self-hosted, linux, arm64, ecs]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      # EndBug/label-sync@v2.3.3 is the latest release; Node runtime unclear.
+      # If a Node 24 release lands, bump.
+      - uses: EndBug/label-sync@v2.3.3
+        with:
+          token: ${{ github.token }}
+          config-file: .github/labels.yml
+          delete-other-labels: ${{ inputs.delete_other_labels || true }}

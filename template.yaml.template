@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  innomesh-cloudcontrol-ResolveGatewayAddress-v1
+
+  Task in the deploy monitoring room step function. Resolves each device's
+  Gateway Device association and writes the five gateway_* attributes onto
+  its assets.{namespace} item.
+
+Globals:
+  Function:
+    Timeout: 120
+
+Resources:
+  cloudControlResolveGatewayAddressV1:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src
+      Handler: app.lambda_handler
+      Runtime: python3.13
+      FunctionName: innomesh-cloudcontrol-ResolveGatewayAddress-v1
+      Environment:
+            Variables:
+              Environment: $Environment
+      Description: Lambda part of deploy room step function which resolves gateway addresses onto asset items
+      MemorySize: 256
+      Timeout: 120
+      VpcConfig:
+        SecurityGroupIds:
+          - $SecurityGroupId1
+        SubnetIds:
+          - $SubnetId1
+          - $SubnetId2
+          - $SubnetId3
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+          - Sid: resolveGatewayAddressRoleAccess
+            Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - ssm:GetParameters*
+              - ssm:GetParameter
+              - ssm:DescribeParameters
+              - kms:Decrypt
+              - dynamodb:GetItem
+              - dynamodb:UpdateItem
+            Resource: "*"

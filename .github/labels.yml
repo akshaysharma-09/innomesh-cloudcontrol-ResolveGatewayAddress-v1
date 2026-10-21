@@ -1,0 +1,71 @@
+# #### THIS FILE IS MANAGED BY AN AUTOMATED WORKFLOW ####
+# #### UPDATES MUST BE DONE IN THE CI-WORKFLOWS REPO - OR YOUR CHANGES WILL BE LOST ####
+# #### https://github.com/next-mesh/ci-workflows ####
+#
+# Canonical label inventory for every next-mesh repo. Synced by label-sync.yml
+# (which uses EndBug/label-sync@v2). Labels not in this file are deleted.
+
+# ----- Change type -----
+- name: type/feature
+  color: "0e8a16"
+  description: New functionality
+- name: type/bug
+  color: "d73a4a"
+  description: Defect or regression
+- name: type/refactor
+  color: "5319e7"
+  description: Internal cleanup, no behaviour change
+- name: type/docs
+  color: "0075ca"
+  description: Documentation only
+- name: type/chore
+  color: "cfd3d7"
+  description: Maintenance, deps, build, CI
+- name: type/test
+  color: "bfd4f2"
+  description: Test-only change
+
+# ----- Area (set by labeler.yml path rules) -----
+- name: area/go
+  color: "00add8"
+  description: Touches Go code
+- name: area/python
+  color: "3572a5"
+  description: Touches Python code
+- name: area/typescript
+  color: "3178c6"
+  description: Touches TypeScript / Node code
+- name: area/terraform
+  color: "7b42bc"
+  description: Touches Terraform / IaC
+- name: area/ci
+  color: "ededed"
+  description: GitHub Actions / workflow files
+- name: area/docs
+  color: "0075ca"
+  description: Markdown / docs
+
+# ----- Status -----
+- name: status/blocked
+  color: "b60205"
+  description: Cannot progress until something else lands
+- name: status/needs-review
+  color: "fbca04"
+  description: Waiting on review
+- name: status/wip
+  color: "ededed"
+  description: Work in progress, do not merge
+
+# ----- Misc -----
+- name: sync-files
+  color: "ededed"
+  description: Opened automatically by the ci-workflows sync-files job
+- name: automated
+  color: "ededed"
+  description: Opened or maintained by automation, not a human
+- name: dependencies
+  color: "0366d6"
+  description: Dependency update (Dependabot)
+- name: security
+  color: "b60205"
+  description: Security-relevant change
