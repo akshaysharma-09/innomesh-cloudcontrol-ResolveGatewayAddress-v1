@@ -341,7 +341,11 @@ def resolve_room_gateways(room_id, devices, table_name, cipher):
 
         resolved, source = resolve_device(room_id, device, by_id, table_name, cipher, credentials_cache, counts)
 
-        item_id = {"room_id": normalise_room_id(device.get("room_id")) or room_id, "asset_id": asset_id}
+        # Always the room being deployed, never a room_id carried on the
+        # device entry. The artefact is operator-authored, and honouring a
+        # room_id from it would let one room's deploy read and write assets
+        # in another. The RFC's rule is same-room only.
+        item_id = {"room_id": room_id, "asset_id": asset_id}
         if update_gateway_attributes(table_name, item_id, resolved):
             counts[source] += 1
         else:
@@ -374,7 +378,7 @@ def resolve_device(room_id, device, by_id, table_name, cipher, credentials_cache
 
         if problem is None:
             gateway = by_id[reference]
-            credentials = lookup_credentials(room_id, reference, by_id, table_name, credentials_cache)
+            credentials = lookup_credentials(room_id, reference, table_name, credentials_cache)
             resolved = resolve_via_gateway_device(device, gateway, credentials)
             if resolved is None:
                 problem = "gateway device has neither a usable hostname nor an ip_address"
@@ -394,16 +398,16 @@ def resolve_device(room_id, device, by_id, table_name, cipher, credentials_cache
     return dict(CLEARED), "cleared"
 
 
-def lookup_credentials(room_id, reference, by_id, table_name, cache):
+def lookup_credentials(room_id, reference, table_name, cache):
     """Credentials off the gateway device's own asset item, read once."""
     if reference in cache:
         return cache[reference]
 
-    gateway = by_id[reference]
-    item_id = {
-        "room_id": normalise_room_id(gateway.get("room_id")) or room_id,
-        "asset_id": reference,
-    }
+    # Same-room only: the key is the room being deployed. A gateway device
+    # is by definition in this room, so a room_id on its entry is never
+    # followed - doing so would copy another room's stored credentials onto
+    # assets in this one.
+    item_id = {"room_id": room_id, "asset_id": reference}
     credentials = get_asset_credentials(table_name, item_id)
     if not credentials:
         print(f"<warn> room {room_id}: gateway device {reference} has no asset item; gateway credentials written empty")

@@ -297,3 +297,57 @@ class TestResolveRoomGateways:
                 "b1g12", build_device_list({"devices": [SESSION_MANAGER]}), "assets.ns", None
             )
         assert counts["missing"] == 1 and counts["cleared"] == 0
+
+
+class TestSameRoomScoping:
+    """
+    A device entry is operator-authored data. Honouring a room_id carried on
+    one would let a deploy of room A read credentials from, and write
+    attributes onto, assets in room B. The RFC's rule is same-room only, so
+    every key is the room being deployed.
+    """
+
+    def test_a_device_claiming_another_room_is_still_keyed_to_this_room(self):
+        keys = {}
+
+        def fake_update(table_name, item_id, payload):
+            keys[item_id["asset_id"]] = item_id
+            return True
+
+        devices = build_device_list(
+            {
+                "devices": [
+                    {"id": "dev.a", "room_id": "monitoring-some-other-room", "gateway_address": "ctrl.example.com"}
+                ]
+            }
+        )
+        with (
+            patch("app.update_gateway_attributes", side_effect=fake_update),
+            patch("app.get_asset_credentials", return_value={}),
+        ):
+            resolve_room_gateways("b1g12", devices, "assets.ns", None)
+
+        assert keys["dev.a"] == {"room_id": "b1g12", "asset_id": "dev.a"}
+
+    def test_gateway_credentials_are_read_from_this_room_only(self):
+        reads = []
+
+        def fake_get(table_name, item_id):
+            reads.append(item_id)
+            return {"username": "admin", "password": "ct", "encrypted": True}
+
+        devices = build_device_list(
+            {
+                "devices": [
+                    dict(SESSION_MANAGER, room_id="monitoring-victim-room"),
+                    TRANSCEIVER,
+                ]
+            }
+        )
+        with (
+            patch("app.update_gateway_attributes", return_value=True),
+            patch("app.get_asset_credentials", side_effect=fake_get),
+        ):
+            resolve_room_gateways("b1g12", devices, "assets.ns", None)
+
+        assert reads == [{"room_id": "b1g12", "asset_id": "dev.matrix.1"}]
