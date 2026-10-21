@@ -26,7 +26,11 @@ from Crypto.Cipher import PKCS1_OAEP
 from Crypto.PublicKey import RSA
 
 from config import Category, get_kms_public_key
-from dynamo_db_api import get_asset_credentials, update_gateway_attributes
+from dynamo_db_api import (
+    get_asset_credentials,
+    get_asset_gateway_attributes,
+    update_gateway_attributes,
+)
 
 log = logging.getLogger("CloudControlAPI")
 
@@ -346,13 +350,26 @@ def resolve_room_gateways(room_id, devices, table_name, cipher):
         # room_id from it would let one room's deploy read and write assets
         # in another. The RFC's rule is same-room only.
         item_id = {"room_id": room_id, "asset_id": asset_id}
-        if update_gateway_attributes(table_name, item_id, resolved):
+
+        # Store the values the way pushAssetMetadata stores a field it has no
+        # explicit mapping for, so this lambda does not overwrite the
+        # convention that state wrote onto the same item moments earlier.
+        item_exists, existing = get_asset_gateway_attributes(table_name, item_id)
+        if not item_exists:
+            counts["missing"] += 1
+            print(f"<warn> room {room_id}: asset {asset_id} has no asset item; gateway attributes not written")
+            continue
+
+        stored = to_stored_attributes(resolved, item_exists, existing)
+        if not stored:
+            counts[source] += 1
+            continue
+
+        if update_gateway_attributes(table_name, item_id, stored):
             counts[source] += 1
         else:
             counts["missing"] += 1
-            print(
-                f"<warn> room {item_id['room_id']}: asset {asset_id} has no asset item; gateway attributes not written"
-            )
+            print(f"<warn> room {room_id}: asset {asset_id} disappeared before its gateway attributes could be written")
 
     return counts
 
@@ -517,3 +534,59 @@ def lambda_handler(event, context):
     except Exception as exc:
         log.exception(exc)
         raise
+
+
+# --------------------------------------------------------------------------
+# The "value|version" convention
+# --------------------------------------------------------------------------
+
+
+def apply_pipe_convention(new_value, item_exists, existing_value):
+    """
+    Store a value the way innomesh-cloudcontrol-pushAssetMetadata-v1 stores a
+    field it has no explicit mapping for.
+
+    The gateway_* fields are not in that lambda's explicit payload dict, so
+    when Room Manager mirrors them into asset_metadata[] they go through its
+    catch-all and land in this form. Writing them any other way here would
+    overwrite that convention on the very next deploy, so this reproduces it
+    branch for branch:
+
+        no item yet              -> "value|0"
+        existing "v|N"           -> "value|N"   (the version is preserved)
+        existing "v"             -> "value|0"
+        existing non-string/None -> value, raw
+
+    Returns (value_to_write, should_write). should_write is False only for
+    the shape pushAssetMetadata itself leaves untouched - an existing string
+    with more than two pipe-separated parts - so this lambda does not invent
+    a value where the reference implementation writes none.
+    """
+    text = str(new_value if new_value is not None else "")
+
+    if not item_exists:
+        return text + "|0", True
+
+    if isinstance(existing_value, str):
+        parts = existing_value.split("|")
+        if len(parts) == 2:
+            parts[0] = text
+            return "|".join(parts), True
+        if len(parts) == 1:
+            return text + "|0", True
+        # pushAssetMetadata matches neither branch here and writes nothing.
+        return None, False
+
+    # The item exists but the attribute is absent, or holds a non-string.
+    # pushAssetMetadata writes the raw value in that case.
+    return new_value, True
+
+
+def to_stored_attributes(resolved, item_exists, existing):
+    """Apply the convention across the five resolved attributes."""
+    stored = {}
+    for field, value in resolved.items():
+        value_to_write, should_write = apply_pipe_convention(value, item_exists, existing.get(field))
+        if should_write:
+            stored[field] = value_to_write
+    return stored

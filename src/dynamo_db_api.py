@@ -44,6 +44,34 @@ def get_asset_credentials(table_name, item_id):
         raise
 
 
+def get_asset_gateway_attributes(table_name, item_id):
+    """
+    The five gateway_* attributes as they currently stand on an asset item,
+    and whether the item exists at all.
+
+    Both are needed to reproduce pushAssetMetadata's "value|version"
+    convention: it keys off whether the item exists, and off the type and
+    shape of the value already there.
+
+    Returns (exists, attributes).
+    """
+    try:
+        table = dynamodb.Table(table_name)
+        names = {f"#{k}": k for k in GATEWAY_ATTRIBUTES}
+        response = table.get_item(
+            Key=item_id,
+            ProjectionExpression=", ".join(names),
+            ExpressionAttributeNames=names,
+        )
+    except Exception as e:
+        print(f"Error occurred while reading gateway attributes for {item_id}: {str(e)}")
+        raise
+
+    if "Item" not in response:
+        return False, {}
+    return True, response["Item"]
+
+
 def update_gateway_attributes(table_name, item_id, payload):
     """
     Set exactly the five gateway_* attributes on one asset item.

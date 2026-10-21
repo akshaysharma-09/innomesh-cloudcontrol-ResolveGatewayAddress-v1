@@ -104,6 +104,36 @@ encrypts with this code and decrypts with the worker's routine written out
 longhand — so a change to either side fails the build rather than silently
 orphaning every stored credential.
 
+## Storage form: "value|version"
+
+`pushAssetMetadata` has an explicit payload dict for the fields it knows
+about, and a catch-all for everything else that stores them as
+`"value|version"`. The five `gateway_*` fields are not in that dict, so when
+Room Manager mirrors them into `asset_metadata[]` they go through the
+catch-all and land in that form.
+
+This lambda runs moments later against the same item, so it stores them the
+same way rather than overwriting the convention on every deploy. The branches
+are reproduced exactly:
+
+| State of the attribute | Stored as |
+|---|---|
+| item does not exist yet | `"value\|0"` |
+| existing `"v\|N"` | `"value\|N"` — the version is preserved |
+| existing `"v"` | `"value\|0"` |
+| existing non-string, or absent | the raw value |
+
+The last row is the common first-deploy case: asset persistence has just
+created the item and no gateway attribute is on it yet, so the values are
+written raw.
+
+> **Downstream note.** The RFC's A.4 example shows these fields clean
+> (`"gateway_address": "nuc-av-b1.curtin.edu.au"`), and the Sight worker and
+> coordination engine read them as a plain string, int and bool. Where the
+> pipe form applies, those consumers need to strip the `|N` suffix the same
+> way the Portal asset views already do for `ip_port`. Raised with the RFC
+> author.
+
 ## Behaviour worth knowing
 
 - **Room id normalisation.** `pushAssetMetadata` strips `cloud-` and

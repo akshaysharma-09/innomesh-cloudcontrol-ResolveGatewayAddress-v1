@@ -151,9 +151,10 @@ class TestDeviceList:
 class TestResolveRoomGateways:
     """The three-way rule, with the writer and credential read stubbed."""
 
-    def run(self, devices, credentials=None, cipher=None):
+    def run(self, devices, credentials=None, cipher=None, existing=None):
         writes = {}
         creds = credentials or {}
+        prior = existing if existing is not None else {}
 
         def fake_update(table_name, item_id, payload):
             writes[item_id["asset_id"]] = (item_id, payload)
@@ -162,9 +163,14 @@ class TestResolveRoomGateways:
         def fake_get(table_name, item_id):
             return creds.get(item_id["asset_id"], {})
 
+        def fake_existing(table_name, item_id):
+            # The item always exists: this state runs after asset persistence.
+            return True, prior.get(item_id["asset_id"], {})
+
         with (
             patch("app.update_gateway_attributes", side_effect=fake_update),
             patch("app.get_asset_credentials", side_effect=fake_get),
+            patch("app.get_asset_gateway_attributes", side_effect=fake_existing),
         ):
             counts = resolve_room_gateways("b1g12", build_device_list({"devices": devices}), "assets.ns", cipher)
         return counts, writes
@@ -290,7 +296,7 @@ class TestResolveRoomGateways:
 
     def test_missing_asset_item_is_counted_not_fatal(self):
         with (
-            patch("app.update_gateway_attributes", return_value=False),
+            patch("app.get_asset_gateway_attributes", return_value=(False, {})),
             patch("app.get_asset_credentials", return_value={}),
         ):
             counts = resolve_room_gateways(
@@ -324,6 +330,7 @@ class TestSameRoomScoping:
         with (
             patch("app.update_gateway_attributes", side_effect=fake_update),
             patch("app.get_asset_credentials", return_value={}),
+            patch("app.get_asset_gateway_attributes", return_value=(True, {})),
         ):
             resolve_room_gateways("b1g12", devices, "assets.ns", None)
 
@@ -347,6 +354,7 @@ class TestSameRoomScoping:
         with (
             patch("app.update_gateway_attributes", return_value=True),
             patch("app.get_asset_credentials", side_effect=fake_get),
+            patch("app.get_asset_gateway_attributes", return_value=(True, {})),
         ):
             resolve_room_gateways("b1g12", devices, "assets.ns", None)
 

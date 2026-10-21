@@ -91,6 +91,7 @@ class TestDispatchContract:
         with (
             patch("app.requests.get", return_value=response),
             patch("app.update_gateway_attributes", side_effect=fake_update),
+            patch("app.get_asset_gateway_attributes", return_value=(True, {})),
             patch("app.get_asset_credentials", return_value={}),
         ):
             return dispatch(ev), recorded
@@ -141,6 +142,7 @@ class TestDispatchContract:
         with (
             patch("app.requests.get", return_value=response),
             patch("app.get_asset_credentials", return_value={}),
+            patch("app.get_asset_gateway_attributes", return_value=(True, {})),
             patch("app.update_gateway_attributes", side_effect=Exception("throttled")),
         ):
             result = dispatch(event())
@@ -153,6 +155,7 @@ class TestDispatchContract:
         with (
             patch("app.requests.get", return_value=response),
             patch("app.get_kms_public_key", return_value=None),
+            patch("app.get_asset_gateway_attributes", return_value=(True, {})),
             patch("app.update_gateway_attributes", return_value=True),
         ):
             result = dispatch(event())
@@ -178,6 +181,7 @@ class TestDispatchContract:
         with (
             patch("app.requests.get", return_value=response),
             patch("app.update_gateway_attributes", side_effect=fake_update),
+            patch("app.get_asset_gateway_attributes", return_value=(True, {})),
             patch("app.get_asset_credentials", return_value={}),
         ):
             result = dispatch(event(payload=payload))
